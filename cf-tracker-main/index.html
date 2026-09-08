@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CF Tracker — Follow & Solve</title>
+  <meta name="description" content="Track your Codeforces problem-solving progress against another user's submissions." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon">⚡</span>
+          <h1>CF Tracker</h1>
+        </div>
+        <p class="subtitle">Follow &amp; Solve</p>
+      </div>
+      <div class="header-right">
+        <div class="sync-info">
+          <span class="last-sync" id="lastSync">Never synced</span>
+        </div>
+        <button class="btn-sync" id="btnSync">
+          <span class="sync-icon">⟳</span>
+          Sync
+        </button>
+        <div class="user-badge" id="userBadge" title="Your Settings">
+          <span class="user-icon">👤</span>
+          <span id="userBadgeHandle">User</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Profile Tabs -->
+    <div class="profile-bar-wrapper">
+      <div class="profile-bar" id="profileBar"></div>
+      <button class="profile-add-btn" id="btnAddProfile" title="Add profile">+</button>
+      <div class="add-profile-popover" id="addProfilePopover">
+        <h3>👤 Add Target Profile</h3>
+        <input type="text" id="newProfileInput" placeholder="Codeforces username..." autocomplete="off" />
+        <div class="add-profile-actions">
+          <button class="btn-add-confirm" id="btnConfirmAdd">Add &amp; Track</button>
+          <button class="btn-add-cancel" id="btnCancelAdd">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- View Mode Tabs -->
+    <div class="view-mode-bar" id="viewModeBar">
+      <button class="view-tab active" data-view="all">
+        <span class="view-tab-icon">📋</span> All Problems
+        <span class="view-tab-count" id="viewCountAll">0</span>
+      </button>
+      <button class="view-tab" data-view="bookmarked">
+        <span class="view-tab-icon">⭐</span> Bookmarked
+        <span class="view-tab-count" id="viewCountBookmarked">0</span>
+      </button>
+      <button class="view-tab" data-view="checkmarked">
+        <span class="view-tab-icon">✅</span> Checkmarked
+        <span class="view-tab-count" id="viewCountCheckmarked">0</span>
+      </button>
+    </div>
+
+    <!-- Stats Bar -->
+    <section class="stats-bar" id="statsBar">
+      <div class="stat-card stat-total">
+        <span class="stat-value" id="statTotal">—</span>
+        <span class="stat-label">Total Problems</span>
+      </div>
+      <div class="stat-card stat-solved">
+        <span class="stat-value" id="statSolved">—</span>
+        <span class="stat-label">You Solved</span>
+      </div>
+      <div class="stat-card stat-attempted">
+        <span class="stat-value" id="statAttempted">—</span>
+        <span class="stat-label">You Attempted</span>
+      </div>
+      <div class="stat-card stat-remaining">
+        <span class="stat-value" id="statRemaining">—</span>
+        <span class="stat-label">Remaining</span>
+      </div>
+      <div class="stat-card stat-target-failed">
+        <span class="stat-value" id="statTargetFailed">—</span>
+        <span class="stat-label">Target Failed</span>
+      </div>
+      <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+        <span class="progress-text" id="progressText">0%</span>
+      </div>
+    </section>
+
+    <!-- Daily Target Planner -->
+    <section class="planner-section" id="plannerSection" style="display:none;">
+      <div class="planner-header">
+        <div class="planner-title">
+          <span class="planner-title-icon">🎯</span>
+          <span>Daily Target Planner</span>
+        </div>
+        <div class="planner-controls">
+          <div class="planner-control-group">
+            <label>Target Date:</label>
+            <input type="date" id="plannerTargetDate" />
+          </div>
+          <span class="planner-or">OR</span>
+          <div class="planner-control-group">
+            <label>Solve Today:</label>
+            <input type="number" id="plannerDailyOverride" min="1" max="100" placeholder="—" />
+          </div>
+        </div>
+      </div>
+      <div class="planner-summary" id="plannerSummary"></div>
+      <div class="planner-buckets" id="plannerBuckets"></div>
+      <div class="planner-footer">
+        <div class="planner-footer-left">
+          Today's Target: <strong id="plannerTodayTarget">0</strong> problems
+        </div>
+        <button class="btn-show-suggestions" id="btnShowSuggestions">
+          <span>💡</span> Show Today's Problems
+        </button>
+      </div>
+      <div class="suggestions-panel" id="suggestionsPanel">
+        <div class="suggestions-inner">
+          <div class="suggestions-title">
+            <span>📝</span> Today's Suggested Problems
+          </div>
+          <div class="suggestion-cards" id="suggestionCards"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Controls -->
+    <section class="controls-bar">
+      <div class="controls-row">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Search problems, contests, tags..." />
+        </div>
+        <div class="sort-group">
+          <label>Sort by</label>
+          <select id="sortSelect">
+            <option value="date-desc">Date (Newest)</option>
+            <option value="date-asc">Date (Oldest)</option>
+            <option value="rating-desc">Rating (High → Low)</option>
+            <option value="rating-asc">Rating (Low → High)</option>
+            <option value="rating-date-desc">Rating ↓, then Date ↓</option>
+            <option value="rating-date-asc">Rating ↑, then Date ↑</option>
+            <option value="status">Your Status</option>
+            <option value="bookmark-first">⭐ Bookmarked First</option>
+          </select>
+        </div>
+      </div>
+      <div class="filters-row">
+        <div class="filter-group">
+          <label>Your Status</label>
+          <select id="filterStatus">
+            <option value="all">All</option>
+            <option value="solved">✅ Solved</option>
+            <option value="attempted">⚠️ Attempted</option>
+            <option value="not-attempted">❌ Not Attempted</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Target Status</label>
+          <select id="filterTargetStatus">
+            <option value="all">All</option>
+            <option value="solved">✅ Solved</option>
+            <option value="failed">❌ Failed</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Rating Min</label>
+          <input type="number" id="filterRatingMin" placeholder="e.g. 800" step="100" />
+        </div>
+        <div class="filter-group">
+          <label>Rating Max</label>
+          <input type="number" id="filterRatingMax" placeholder="e.g. 2000" step="100" />
+        </div>
+        <div class="filter-group">
+          <label>Tags</label>
+          <select id="filterTags">
+            <option value="all">All Tags</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Loading -->
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner"></div>
+      <p class="loading-text" id="loadingText">Fetching submissions...</p>
+    </div>
+
+    <!-- Problem Table -->
+    <section class="table-container" id="tableContainer">
+      <div class="results-count" id="resultsCount"></div>
+      <table class="problem-table" id="problemTable">
+        <thead>
+          <tr>
+            <th class="col-check">☑</th>
+            <th class="col-bookmark">⭐</th>
+            <th class="col-idx">#</th>
+            <th class="col-problem">Problem</th>
+            <th class="col-rating">Rating</th>
+            <th class="col-tags">Tags</th>
+            <th class="col-target">Target</th>
+            <th class="col-you">You</th>
+            <th class="col-subs">Subs</th>
+            <th class="col-date">Target Date</th>
+          </tr>
+        </thead>
+        <tbody id="problemTableBody"></tbody>
+      </table>
+      <div class="pagination" id="pagination"></div>
+    </section>
+
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <span class="empty-icon">📭</span>
+      <p>No problems match your filters</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>Data from <a href="https://codeforces.com" target="_blank">Codeforces API</a></p>
+    </footer>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- User Modal Settings -->
+  <div class="setup-modal-overlay" id="userModalOverlay" style="display:none;">
+    <div class="setup-modal">
+      <span class="setup-icon">🔧</span>
+      <h2>Your Profile Settings</h2>
+      <p style="margin-bottom: 20px; color: var(--text-secondary); font-size: 0.9rem;">
+        Currently logged in as Codeforces user: <strong id="currentUserDisplay" style="color: var(--accent-blue);"></strong>
+      </p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button class="btn-setup-start" id="btnLogout" style="background: linear-gradient(135deg, var(--accent-red), #b71c1c);">Log Out</button>
+        <button class="btn-add-cancel" id="btnCloseUserModal" style="width: 100%; border-color: rgba(255,255,255,0.2);">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
